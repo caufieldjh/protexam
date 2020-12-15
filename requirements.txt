@@ -1,0 +1,5 @@
+Bio
+bs4
+environs
+tqdm
+xlrd
