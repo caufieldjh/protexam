@@ -17,12 +17,12 @@ __email__ = "jcaufield@mednet.ucla.edu"
 
 import sys, argparse
 
-import protexam_helpers as p_help
-import protexam_query as p_query
-import protexam_input as p_input
-import protexam_process as p_proc
-import protexam_output as p_output
-import protexam_settings as p_settings
+import protexam_helpers as phlp
+import protexam_query as pqry
+import protexam_input as pint
+import protexam_process as ppro
+import protexam_output as pout
+import protexam_settings as pset
 
 ## Constants and Options
 parser = argparse.ArgumentParser()
@@ -31,8 +31,10 @@ parser.add_argument("--query", help="Search for documents matching a query, in q
                                      " PubMed search options, including MeSH terms.", 
 					action="append")
 parser.add_argument("--query_file", help="Search for documents matching a query," 
-                                         " starting with a text file containing one"
-                                         " search term per line.",
+                                         " starting with the name of a text file"
+                                         " containing one search term per line."
+                                         " By default, this assumes an OR"
+                                         " relationship between all terms.",
 					action="append")
 args = parser.parse_args()
 
@@ -42,8 +44,34 @@ args = parser.parse_args()
 
 ## Main
 def main():
-	
-	print("Done.")
+ 
+ print("** ProtExAM **")
+ 
+ #A quick version check
+ if sys.version_info[0] < 3:
+		sys.exit("Not compatible with Python2 -- sorry!\n"
+					"Exiting...")
+ 
+ have_query = False
+ 
+ if args.query:
+  have_query = True
+  query = (args.query)[0]
+  pmid_list = pqry.run_pubmed_query(query)
+  
+ if args.query_file:
+  have_query = True
+  query_list = []
+  with open(args.query_file[0]) as query_file:
+			for query_item in query_file:
+				query_list.append(query_item.rstrip())
+  pmid_list = pqry.run_pubmed_query(query_list)
+  
+ if not have_query:
+  		sys.exit("No query provided.\n"
+					"Exiting...")
+ 
+ print("Done.")
 
 if __name__ == "__main__":
 	sys.exit(main())
