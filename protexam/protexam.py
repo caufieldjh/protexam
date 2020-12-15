@@ -18,7 +18,7 @@ __email__ = "jcaufield@mednet.ucla.edu"
 import sys, argparse
 
 import protexam_helpers as p_help
-import protexam_start as p_start
+import protexam_query as p_query
 import protexam_input as p_input
 import protexam_process as p_proc
 import protexam_output as p_output
@@ -26,9 +26,13 @@ import protexam_settings as p_settings
 
 ## Constants and Options
 parser = argparse.ArgumentParser()
-parser.add_argument("--get_pmid", help="retrieve one or more documents in MEDLINE format from PubMed based on PMID", 
-					action="append", nargs='+')
-parser.add_argument("--get_pmid_file", help="retrieve documents specified in a file containing one PMID per line",
+parser.add_argument("--query", help="Search for documents matching a query, in quotes."
+                                     " This will be passed to PubMed so please use"
+                                     " PubMed search options, including MeSH terms.", 
+					action="append")
+parser.add_argument("--query_file", help="Search for documents matching a query," 
+                                         " starting with a text file containing one"
+                                         " search term per line.",
 					action="append")
 args = parser.parse_args()
 
