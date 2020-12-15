@@ -11,7 +11,19 @@ TBD
 TBD
 
 ## How to Run
-TBD
+
+For now, on a Unix-like command line, run the following from the root directory:
+```
+./protexam.sh
+```
+or otherwise run the following from the protexam directory:
+```
+python protexam.py
+```
+or
+```
+python3 protexam.py
+```
 
 ## Credits
 Project started by Harry Caufield in the Ping Lab at UCLA in November 2020.
