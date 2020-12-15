@@ -12,3 +12,5 @@ from environs import Env
 
 env = Env()
 
+PERSONAL_EMAIL = "jcaufield@mednet.ucla.edu"
+
