@@ -5,10 +5,18 @@ ProtExAM - the Protein Expression and Association Miner
 TBD
 
 ## Setup
-TBD
+Install the requirements below with pip, as follows:
+```
+pip3 install -r requirements.txt
+```
 
 ### Requirements
-TBD
+Primary requirements are:
+* BioPython
+* BeautifulSoup4
+* environs
+* tqdm
+* xlrd
 
 ## How to Run
 
