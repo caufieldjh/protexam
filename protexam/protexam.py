@@ -19,7 +19,6 @@ import sys, argparse
 
 import protexam_helpers as phlp
 import protexam_query as pqry
-import protexam_input as pint
 import protexam_process as ppro
 import protexam_output as pout
 import protexam_settings as pset
