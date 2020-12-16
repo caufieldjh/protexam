@@ -35,6 +35,9 @@ parser.add_argument("--query_file", help="Search for documents matching a query,
                                          " By default, this assumes an OR"
                                          " relationship between all terms.",
 					action="append")
+parser.add_argument("--auto", help="Run in automatic mode, accepting all options"
+                                   " with a Yes.", 
+					action="store_true")
 args = parser.parse_args()
 
 ## Classes
@@ -73,9 +76,14 @@ def main():
   "Exiting...")
  
  #Prompt to continue - the function here is just an input parser
- response = phlp.get_input("Continue with document download? (Y/N) ", "truefalse")
- if not response:
-  sys.exit("OK, exiting...")
+ question = "Continue with document download? (Y/N) "
+ if not args.auto:
+  response = phlp.get_input(question, "truefalse")
+  if not response:
+   sys.exit("OK, exiting...")
+ else:
+  print("%s Y" % (question))
+  
   
  pqry.download_pubmed_entries(pmid_list, query_dir_path, webenv)
  
