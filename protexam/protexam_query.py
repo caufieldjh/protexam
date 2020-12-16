@@ -105,7 +105,8 @@ def download_pubmed_entries(pmid_list, query_dir_path, webenv):
  Retrieve contents of PubMed entries with IDs in the provided list.
  Input is a list of PMIDs, the path to a previously created query
  directory, and a previously created WebEnv address.
- Output is saved to the same directory created for the query.
+ Output, the set of PubMed records, is returned and is saved to 
+ the same directory created for the query.
  '''
  
  from Bio import Medline
@@ -122,7 +123,7 @@ def download_pubmed_entries(pmid_list, query_dir_path, webenv):
  index = 0
  retmax = 10000
  pm_recs = []
- pbar = tqdm(total = len(pmid_list), unit=" entries retrieved")
+ pbar = tqdm(total = count, unit=" entries retrieved")
  
  if count > retmax:
   while index < count + retmax - 1: #Need to add retmax to get the last chunk
@@ -142,9 +143,71 @@ def download_pubmed_entries(pmid_list, query_dir_path, webenv):
   
  print("Retrieved %s entries." % (len(pm_recs)))
  
- with open(query_entries_path, "w") as entryfile:
+ with open(query_entries_path, "w", encoding="utf-8") as entryfile:
   for rec in pm_recs:
    entryfile.write(str(rec) + "\n")
  
  print("Wrote entries to %s." % (query_entries_path))
  
+ return pm_recs
+
+def download_pmc_entries(pm_recs, query_dir_path, webenv):
+ '''
+ Retrieve contents of PubMed Central full text entries with IDs in the 
+ provided list.
+ Input is a set of PubMed records as returned from the 
+ download_pubmed_entries function, the path to a previously created 
+ query directory, and a previously created WebEnv address.
+ Output is saved to the same directory created for the query.
+ '''
+ 
+ from Bio import Medline
+ import xml.dom.minidom
+ 
+ query_entries_fn = "pmc_fulltexts.txt"
+ query_entries_path = query_dir_path / query_entries_fn
+ 
+ pmc_ids = []
+ for rec in pm_recs:
+  if 'PMC' in rec.keys():
+   pmc_ids.append(rec['PMC'])
+  
+ count = len(pmc_ids)
+ 
+ print("Retrieving contents for %s PubMed Central texts." % (count))
+ if count > 500:
+  print("This list is quite long - retrieval may take some time.")
+ 
+ #Need to trim off the "PMC" from each ID
+ pmc_ids_trim = [id[3:] for id in pmc_ids]
+ 
+ index = 0
+ retmax = 10000
+ pm_recs = []
+ pbar = tqdm(total = count, unit=" entries retrieved")
+ 
+ if count > retmax:
+  while index < count + retmax - 1: #Need to add retmax to get the last chunk
+   handle = Entrez.efetch(db="pmc", id=pmc_ids_trim, rettype="full", retmode = "xml", retmax = retmax, usehistory="y", webenv = webenv, retstart = index)
+   hxml = xml.dom.minidom.parseString(handle.read())
+   hxml_pretty = hxml.toprettyxml()
+   with open(query_entries_path, "ab", encoding="utf-8") as outfile:
+    for line in hxml_pretty:
+     outfile.write(line)
+   handle.close()
+   pbar.update(retmax) #Not quite right 
+   index = index + retmax
+ else:
+  handle = Entrez.efetch(db="pmc", id=pmc_ids_trim, rettype="full", retmode = "xml", retmax = retmax, usehistory="y", webenv = webenv, retstart = index)
+  hxml = xml.dom.minidom.parseString(handle.read())
+  hxml_pretty = hxml.toprettyxml()
+  with open(query_entries_path, "w", encoding="utf-8") as outfile:
+    for line in hxml_pretty:
+     outfile.write(line)
+  handle.close()
+  pbar.update(count) #Not quite right
+ pbar.close()
+  
+ print("Retrieved %s entries." % (count)) #This may not be true - need to find something in output to reveal docs, since some may not be downloadable.
+ 
+ print("Wrote entries to %s." % (query_entries_path))

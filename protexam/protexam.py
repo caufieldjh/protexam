@@ -83,9 +83,9 @@ def main():
    sys.exit("OK, exiting...")
  else:
   print("%s Y" % (question))
-  
-  
- pqry.download_pubmed_entries(pmid_list, query_dir_path, webenv)
+ 
+ recs = pqry.download_pubmed_entries(pmid_list, query_dir_path, webenv)
+ pqry.download_pmc_entries(recs, query_dir_path, webenv)
  
  print("Done.")
 
