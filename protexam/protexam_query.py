@@ -66,13 +66,33 @@ def run_pubmed_query(query):
  print("Searching PubMed with the query: %s" % (query))
  print("Query date and time: %s" % (nowstring))
  
- #This should use the history server as it may be large
- #This retmax is just for test purposes for now
- handle = Entrez.esearch(db="pubmed", term=query, retmax=200)
+ #Use the history server by default
+ 
+ retmax = 10000
+ handle = Entrez.esearch(db="pubmed", term=query, retmax = retmax, usehistory="y")
  record = Entrez.read(handle)
  handle.close()
- pmid_list = record['IdList']
  
+ for pmid in record['IdList']:
+  pmid_list.append(pmid)
+ webenv = record['WebEnv']
+ count = int(record['Count'])
+ 
+ #If we hit retmax, then it's time to iterate through the rest
+ 
+ if count > retmax:
+  pbar = tqdm(total = count, unit=" PMIDs retrieved")
+  index = retmax - 1
+  while index < count + retmax - 1: #Need to add retmax to get the last chunk
+   handle = Entrez.esearch(db="pubmed", term=query, retmax = retmax, usehistory="y", webenv = webenv, retstart = index)
+   record = Entrez.read(handle)
+   handle.close()
+   for pmid in record['IdList']:
+    pmid_list.append(pmid)
+    pbar.update(len(record['IdList']))
+   index = index + retmax
+  pbar.close()
+
  print("Query returned %s PubMed records." % (len(pmid_list)))
  
  with open(query_list_path, "w") as pmid_list_file:
@@ -80,6 +100,10 @@ def run_pubmed_query(query):
    pmid_list_file.write(pmid + "\n")
  
  print("Wrote PMID list to %s." % (query_list_path))
+ 
+ #Next up - save records for each in MEDLINE format
+ 
+ #Then get and save PMC entries
  
  return pmid_list
  
