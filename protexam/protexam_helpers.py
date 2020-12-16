@@ -31,4 +31,20 @@ def convert_xlsx_to_tsv(filepath, tabfilepath):
 		sheet = xlsfile.sheet_by_index(0)
 		for rownum in range(sheet.nrows):
 			writer.writerow(sheet.row_values(rownum))
+   
+def get_input(context, desired_output):
+ '''Function for handling user input.'''
+ text_ok = False
+ while not text_ok:
+  text = input(context)
+  if text.lower() not in ["y","n"]:
+   print("Y for Yes or N for No, please.")
+  else:
+   text_ok = True
+  
+ if desired_output == "truefalse" and text.lower() == "y":
+  return True
+ if desired_output == "truefalse" and text.lower() == "n":
+  return False
+  
 	

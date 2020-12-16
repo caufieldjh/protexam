@@ -29,10 +29,9 @@ def run_pubmed_query(query):
  Runs a query on PubMed, with assistance from the BioPython Entrez
  module. The input may be a string or a list. If it's the latter,
  it will be combined into an appropriate search query with OR between
- all terms. The output is a list of matching PubMed IDs.
- This function also saves records (MEDLINE format with abstracts) and
- PubMed Central full text records - where available - to the queries
- folder.
+ all terms. The output is a list of matching PubMed IDs (also saved
+ as a file), the path to the query directory, and the NCBI WebEnv
+ address, so we can continue to use the history server.
  '''
  
  pmid_list = []
@@ -57,8 +56,6 @@ def run_pubmed_query(query):
  
  query_list_fn = "pmid_list_" + query_dir_name + ".txt"
  query_list_path = query_dir_path / query_list_fn
- query_absts_fn = "absts_" + query_dir_name
- query_absts_path = query_dir_path / query_absts_fn
  query_full_fn = "fulltexts_" + query_dir_name
  query_full_path = query_dir_path / query_full_fn
  
@@ -101,9 +98,53 @@ def run_pubmed_query(query):
  
  print("Wrote PMID list to %s." % (query_list_path))
  
- #Next up - save records for each in MEDLINE format
+ return pmid_list, query_dir_path, webenv
  
- #Then get and save PMC entries
+def download_pubmed_entries(pmid_list, query_dir_path, webenv):
+ '''
+ Retrieve contents of PubMed entries with IDs in the provided list.
+ Input is a list of PMIDs, the path to a previously created query
+ directory, and a previously created WebEnv address.
+ Output is saved to the same directory created for the query.
+ '''
  
- return pmid_list
+ from Bio import Medline
+ 
+ query_entries_fn = "entries.txt"
+ query_entries_path = query_dir_path / query_entries_fn
+ 
+ count = len(pmid_list)
+ 
+ print("Retrieving contents for %s PubMed entries." % (count))
+ if count > 50000:
+  print("This list is quite long - retrieval may take some time.")
+ 
+ index = 0
+ retmax = 10000
+ pm_recs = []
+ pbar = tqdm(total = len(pmid_list), unit=" entries retrieved")
+ 
+ if count > retmax:
+  while index < count + retmax - 1: #Need to add retmax to get the last chunk
+   handle = Entrez.efetch(db="pubmed", id=pmid_list, rettype="medline", retmode = "text", retmax = retmax, usehistory="y", webenv = webenv, retstart = index)
+   these_pm_recs = list(Medline.parse(handle))
+   handle.close()
+   new_pm_recs = pm_recs + these_pm_recs
+   pm_recs = new_pm_recs
+   pbar.update(len(these_pm_recs))
+   index = index + retmax
+ else:
+  handle = Entrez.efetch(db="pubmed", id=pmid_list, rettype="medline", retmode = "text", retmax = retmax, usehistory="y", webenv = webenv, retstart = index)
+  pm_recs = list(Medline.parse(handle))
+  handle.close()
+  pbar.update(len(pm_recs))
+ pbar.close()
+  
+ print("Retrieved %s entries." % (len(pm_recs)))
+ 
+ with open(query_entries_path, "w") as entryfile:
+  for rec in pm_recs:
+   entryfile.write(str(rec) + "\n")
+ 
+ print("Wrote entries to %s." % (query_entries_path))
  
