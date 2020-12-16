@@ -208,6 +208,6 @@ def download_pmc_entries(pm_recs, query_dir_path, webenv):
   pbar.update(count) #Not quite right
  pbar.close()
   
- print("Retrieved %s entries." % (count)) #This may not be true - need to find something in output to reveal docs, since some may not be downloadable.
+ print("Retrieved %s entries." % (count)) #This may not be true in all cases
  
  print("Wrote entries to %s." % (query_entries_path))
