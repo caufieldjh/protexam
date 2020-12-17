@@ -163,6 +163,7 @@ def download_pmc_entries(pm_recs, query_dir_path, webenv):
  
  from Bio import Medline
  import xml.dom.minidom
+ import xml.etree.ElementTree as ET
  
  query_entries_fn = "pmc_fulltexts.txt"
  query_entries_path = query_dir_path / query_entries_fn
@@ -191,7 +192,7 @@ def download_pmc_entries(pm_recs, query_dir_path, webenv):
    handle = Entrez.efetch(db="pmc", id=pmc_ids_trim, rettype="full", retmode = "xml", retmax = retmax, usehistory="y", webenv = webenv, retstart = index)
    hxml = xml.dom.minidom.parseString(handle.read())
    hxml_pretty = hxml.toprettyxml()
-   with open(query_entries_path, "ab", encoding="utf-8") as outfile:
+   with open(query_entries_path, "a", encoding="utf-8") as outfile:
     for line in hxml_pretty:
      outfile.write(line)
    handle.close()
@@ -205,9 +206,27 @@ def download_pmc_entries(pm_recs, query_dir_path, webenv):
     for line in hxml_pretty:
      outfile.write(line)
   handle.close()
-  pbar.update(count) #Not quite right
+  pbar.update(count)
  pbar.close()
   
- print("Retrieved %s entries." % (count)) #This may not be true in all cases
- 
  print("Wrote entries to %s." % (query_entries_path))
+ 
+ #Need to check PMC results as some may not have been available
+ print("Checking on documents...")
+ 
+ pub_ids = []
+ fulldoc_ids =[]
+ 
+ tree = ET.parse(query_entries_path)
+ root = tree.getroot()
+ for article in root.findall("./article"):
+  for article_id in article.findall("front/article-meta/article-id"):
+    if article_id.attrib["pub-id-type"] == "pmid":
+     pmid = article_id.text
+     pub_ids.append(pmid)
+  body = article.find("body")
+  if body is not None:
+   fulldoc_ids.append(pmid)
+   
+ print("Retrieved %s PMC entries." % (len(pub_ids)))
+ print("PMC entries with full body text: %s" % (len(fulldoc_ids)))
