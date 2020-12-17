@@ -65,7 +65,7 @@ def run_pubmed_query(query):
  
  #Use the history server by default
  
- retmax = 10000
+ retmax = 1000
  handle = Entrez.esearch(db="pubmed", term=query, retmax = retmax, usehistory="y")
  record = Entrez.read(handle)
  handle.close()
@@ -117,11 +117,9 @@ def download_pubmed_entries(pmid_list, query_dir_path, webenv):
  count = len(pmid_list)
  
  print("Retrieving contents for %s PubMed entries." % (count))
- if count > 50000:
-  print("This list is quite long - retrieval may take some time.")
  
  index = 0
- retmax = 10000
+ retmax = 1000
  pm_recs = []
  pbar = tqdm(total = count, unit=" entries retrieved")
  
