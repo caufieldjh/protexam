@@ -146,6 +146,10 @@ def download_pubmed_entries(pmid_list, query_dir_path, webenv):
  except urllib.error.HTTPError as e:
   print(e)
   
+ #ERROR - the download process throws a 400 error when finishing,
+ #so I guess it's running one more time than necessary.
+ #The one below does it too.
+  
  print("Retrieved %s entries." % (len(pm_recs)))
  
  with open(query_entries_path, "w", encoding="utf-8") as entryfile:
@@ -214,7 +218,10 @@ def download_pmc_entries(pm_recs, query_dir_path, webenv):
   pbar.close()
  except urllib.error.HTTPError as e:
   print(e)
-  
+ 
+ #ERROR - Writing multiple XML docs to the same file means they need merging.
+ #Still need to do this.
+ 
  print("Wrote entries to %s." % (query_entries_path))
  
  #Need to check PMC results as some may not have been available
