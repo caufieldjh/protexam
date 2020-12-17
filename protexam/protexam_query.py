@@ -6,6 +6,7 @@ literature resources (e.g., PubMed), and annotation systems.
 '''
 
 import os, random, sys, datetime
+import urllib
 
 from bs4 import BeautifulSoup
 
@@ -77,18 +78,21 @@ def run_pubmed_query(query):
  
  #If we hit retmax, then it's time to iterate through the rest
  
- if count > retmax:
-  pbar = tqdm(total = count, unit=" PMIDs retrieved")
-  index = retmax - 1
-  while index < count + retmax - 1: #Need to add retmax to get the last chunk
-   handle = Entrez.esearch(db="pubmed", term=query, retmax = retmax, usehistory="y", webenv = webenv, retstart = index)
-   record = Entrez.read(handle)
-   handle.close()
-   for pmid in record['IdList']:
-    pmid_list.append(pmid)
-    pbar.update(len(record['IdList']))
-   index = index + retmax
-  pbar.close()
+ try:
+  if count > retmax:
+   pbar = tqdm(total = count, unit=" PMIDs retrieved")
+   index = retmax - 1
+   while index < count + retmax - 1: #Need to add retmax to get the last chunk
+    handle = Entrez.esearch(db="pubmed", term=query, retmax = retmax, usehistory="y", webenv = webenv, retstart = index)
+    record = Entrez.read(handle)
+    handle.close()
+    for pmid in record['IdList']:
+     pmid_list.append(pmid)
+     pbar.update(len(record['IdList']))
+    index = index + retmax
+   pbar.close()
+ except urllib.error.HTTPError as e:
+  print(e)
 
  print("Query returned %s PubMed records." % (len(pmid_list)))
  
@@ -123,21 +127,24 @@ def download_pubmed_entries(pmid_list, query_dir_path, webenv):
  pm_recs = []
  pbar = tqdm(total = count, unit=" entries retrieved")
  
- if count > retmax:
-  while index < count + retmax - 1: #Need to add retmax to get the last chunk
+ try:
+  if count > retmax:
+   while index < count + retmax - 1: #Need to add retmax to get the last chunk
+    handle = Entrez.efetch(db="pubmed", id=pmid_list, rettype="medline", retmode = "text", retmax = retmax, usehistory="y", webenv = webenv, retstart = index)
+    these_pm_recs = list(Medline.parse(handle))
+    handle.close()
+    new_pm_recs = pm_recs + these_pm_recs
+    pm_recs = new_pm_recs
+    pbar.update(len(these_pm_recs))
+    index = index + retmax
+  else:
    handle = Entrez.efetch(db="pubmed", id=pmid_list, rettype="medline", retmode = "text", retmax = retmax, usehistory="y", webenv = webenv, retstart = index)
-   these_pm_recs = list(Medline.parse(handle))
+   pm_recs = list(Medline.parse(handle))
    handle.close()
-   new_pm_recs = pm_recs + these_pm_recs
-   pm_recs = new_pm_recs
-   pbar.update(len(these_pm_recs))
-   index = index + retmax
- else:
-  handle = Entrez.efetch(db="pubmed", id=pmid_list, rettype="medline", retmode = "text", retmax = retmax, usehistory="y", webenv = webenv, retstart = index)
-  pm_recs = list(Medline.parse(handle))
-  handle.close()
-  pbar.update(len(pm_recs))
- pbar.close()
+   pbar.update(len(pm_recs))
+  pbar.close()
+ except urllib.error.HTTPError as e:
+  print(e)
   
  print("Retrieved %s entries." % (len(pm_recs)))
  
@@ -174,38 +181,39 @@ def download_pmc_entries(pm_recs, query_dir_path, webenv):
  count = len(pmc_ids)
  
  print("Retrieving contents for %s PubMed Central texts." % (count))
- if count > 500:
-  print("This list is quite long - retrieval may take some time.")
  
  #Need to trim off the "PMC" from each ID
  pmc_ids_trim = [id[3:] for id in pmc_ids]
  
  index = 0
- retmax = 10000
+ retmax = 1000
  pm_recs = []
  pbar = tqdm(total = count, unit=" entries retrieved")
  
- if count > retmax:
-  while index < count + retmax - 1: #Need to add retmax to get the last chunk
+ try:
+  if count > retmax:
+   while index < count + retmax - 1: #Need to add retmax to get the last chunk
+    handle = Entrez.efetch(db="pmc", id=pmc_ids_trim, rettype="full", retmode = "xml", retmax = retmax, usehistory="y", webenv = webenv, retstart = index)
+    hxml = xml.dom.minidom.parseString(handle.read())
+    hxml_pretty = hxml.toprettyxml()
+    with open(query_entries_path, "a", encoding="utf-8") as outfile:
+     for line in hxml_pretty:
+      outfile.write(line)
+    handle.close()
+    pbar.update(retmax) #Not quite right 
+    index = index + retmax
+  else:
    handle = Entrez.efetch(db="pmc", id=pmc_ids_trim, rettype="full", retmode = "xml", retmax = retmax, usehistory="y", webenv = webenv, retstart = index)
    hxml = xml.dom.minidom.parseString(handle.read())
    hxml_pretty = hxml.toprettyxml()
-   with open(query_entries_path, "a", encoding="utf-8") as outfile:
-    for line in hxml_pretty:
-     outfile.write(line)
+   with open(query_entries_path, "w", encoding="utf-8") as outfile:
+     for line in hxml_pretty:
+      outfile.write(line)
    handle.close()
-   pbar.update(retmax) #Not quite right 
-   index = index + retmax
- else:
-  handle = Entrez.efetch(db="pmc", id=pmc_ids_trim, rettype="full", retmode = "xml", retmax = retmax, usehistory="y", webenv = webenv, retstart = index)
-  hxml = xml.dom.minidom.parseString(handle.read())
-  hxml_pretty = hxml.toprettyxml()
-  with open(query_entries_path, "w", encoding="utf-8") as outfile:
-    for line in hxml_pretty:
-     outfile.write(line)
-  handle.close()
-  pbar.update(count)
- pbar.close()
+   pbar.update(count)
+  pbar.close()
+ except urllib.error.HTTPError as e:
+  print(e)
   
  print("Wrote entries to %s." % (query_entries_path))
  
@@ -215,16 +223,20 @@ def download_pmc_entries(pm_recs, query_dir_path, webenv):
  pub_ids = []
  fulldoc_ids =[]
  
- tree = ET.parse(query_entries_path)
- root = tree.getroot()
- for article in root.findall("./article"):
-  for article_id in article.findall("front/article-meta/article-id"):
-    if article_id.attrib["pub-id-type"] == "pmid":
-     pmid = article_id.text
-     pub_ids.append(pmid)
-  body = article.find("body")
-  if body is not None:
-   fulldoc_ids.append(pmid)
+ try:
+  tree = ET.parse(query_entries_path)
+  root = tree.getroot()
+  for article in root.findall("./article"):
+   for article_id in article.findall("front/article-meta/article-id"):
+     if article_id.attrib["pub-id-type"] == "pmid":
+      pmid = article_id.text
+      pub_ids.append(pmid)
+   body = article.find("body")
+   if body is not None:
+    fulldoc_ids.append(pmid)
+ except xml.etree.ElementTree.ParseError as e:
+  print("Encountered this error in parsing the PMC output: %s" % (e))
+  print("There may be a problem with the tree structure (e.g., two roots).")
    
  print("Retrieved %s PMC entries." % (len(pub_ids)))
  print("PMC entries with full body text: %s" % (len(fulldoc_ids)))
