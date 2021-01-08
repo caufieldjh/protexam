@@ -69,11 +69,12 @@ def main():
 				query_list.append(query_item.rstrip())
   pmid_list, query_dir_path, webenv = pqry.run_pubmed_query(query_list)
   
- print(query_dir_path)
- 
  if not have_query:
-  sys.exit("No query provided.\n"
+  sys.exit("No query provided. Please use the --query or --query_file "
+           "options.\n"
   "Exiting...")
+  
+  print(query_dir_path)
  
  #Prompt to continue - the function here is just an input parser
  question = "Continue with document download? (Y/N) "
