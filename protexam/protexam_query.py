@@ -196,31 +196,54 @@ def download_pmc_entries(pm_recs, query_dir_path, webenv):
  
  try:
   if count > retmax:
+   multiple_xml = True
    while index < count + retmax - 1: #Need to add retmax to get the last chunk
     handle = Entrez.efetch(db="pmc", id=pmc_ids_trim, rettype="full", retmode = "xml", retmax = retmax, usehistory="y", webenv = webenv, retstart = index)
     hxml = xml.dom.minidom.parseString(handle.read())
     hxml_pretty = hxml.toprettyxml()
+    #Don't include multiple sets of headers/footers or we'll end up with multiple roots
     with open(query_entries_path, "a", encoding="utf-8") as outfile:
-     for line in hxml_pretty:
-      outfile.write(line)
+     outfile.write(hxml_pretty)
     handle.close()
     pbar.update(retmax) #Not quite right 
     index = index + retmax
   else:
+   multiple_xml = False
    handle = Entrez.efetch(db="pmc", id=pmc_ids_trim, rettype="full", retmode = "xml", retmax = retmax, usehistory="y", webenv = webenv, retstart = index)
    hxml = xml.dom.minidom.parseString(handle.read())
    hxml_pretty = hxml.toprettyxml()
    with open(query_entries_path, "w", encoding="utf-8") as outfile:
-     for line in hxml_pretty:
-      outfile.write(line)
+    outfile.write(hxml_pretty)
    handle.close()
    pbar.update(count)
   pbar.close()
  except urllib.error.HTTPError as e:
   print(e)
  
- #ERROR - Writing multiple XML docs to the same file means they need merging.
- #Still need to do this.
+ #Merge xml with multiple roots
+ if multiple_xml:
+  print("Merging entries...")
+  with open(query_entries_path, "r+", encoding="utf-8") as outfile:
+   new_outfile = outfile.readlines()
+   outfile.seek(0)
+   have_header = False
+   for line in new_outfile:
+    if "<pmc-articleset>" in line and not have_header:
+     have_header = True
+     outfile.write(line)
+    elif "<pmc-articleset>" in line and have_header:
+     pass
+    elif any(noline in line for noline in ["</pmc-articleset>",
+                                           "<?xml version=\"1.0\" ?>",
+                                           "<!DOCTYPE pmc-articleset",
+                                           "  PUBLIC '-//NLM//DTD ARTICLE SET 2.0//EN'",
+                                           "  'https://dtd.nlm.nih.gov/ncbi/pmc/articleset/nlm-articleset-2.0.dtd'>"]):
+     pass
+    else:
+      outfile.write(line)
+   outfile.write("</pmc-articleset>")
+   outfile.truncate()
+     
  
  print("Wrote entries to %s." % (query_entries_path))
  
