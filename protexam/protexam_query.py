@@ -322,7 +322,10 @@ def download_ptc_gene_annotations(idlist, query_dir_path):
     elif any(noline in line for noline in ["</collection>",
                                            "<?xml version=\"1.0\" ?>",
                                            "<!DOCTYPE collection",
-                                           "  SYSTEM 'BioC.dtd'>"]):
+                                           "  SYSTEM 'BioC.dtd'>",
+                                           "	<source>PubTator</source>",
+                                           "	<date/>",
+                                           "	<key>BioC.key</key>"]):
      pass
     else:
       outfile.write(line)
