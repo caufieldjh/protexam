@@ -8,6 +8,12 @@ from zipfile import ZipFile
 import xlrd
 import csv
 
+def batch_this(mylist, n=1):
+ '''Prepares batches of maximum size n from a list.'''
+  length = len(mylist)
+  for ndx in range(0, length, n):
+    yield mylist[ndx:min(ndx + n, length)]
+
 def decompress(filepath, outpath):
 	'''Takes a Path filename of a compressed file
 		and the intended output path as input.

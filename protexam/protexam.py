@@ -88,7 +88,7 @@ def main():
  recs = pqry.download_pubmed_entries(pmid_list, query_dir_path, webenv)
  pqry.download_pmc_entries(recs, query_dir_path, webenv)
  
- print("Done.")
+ print("Document download complete.")
 
 if __name__ == "__main__":
 	sys.exit(main())
