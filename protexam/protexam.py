@@ -89,7 +89,20 @@ def main():
  pqry.download_pmc_entries(recs, query_dir_path, webenv)
  
  print("Document download complete.")
+ 
+ #Prompt to continue again
+ question = "Continue with annotation download? (Y/N) "
+ if not args.auto:
+  response = phlp.get_input(question, "truefalse")
+  if not response:
+   sys.exit("OK, exiting...")
+ else:
+  print("%s Y" % (question))
+ 
+ pqry.download_ptc_gene_annotations(pmid_list, query_dir_path)
 
+ print("Annotation download complete.")
+ 
 if __name__ == "__main__":
 	sys.exit(main())
 

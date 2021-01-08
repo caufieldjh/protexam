@@ -5,8 +5,9 @@ Functions for ProtExAM to perform queries on knowledgebases,
 literature resources (e.g., PubMed), and annotation systems. 
 '''
 
-import os, random, sys, datetime
+import os, random, requests, sys, datetime
 import urllib
+import xml.dom.minidom
 
 from bs4 import BeautifulSoup
 
@@ -16,6 +17,7 @@ from tqdm import *
 from Bio import Entrez
 
 import protexam_settings as pset
+import protexam_helpers as phlp
 
 ## Constants
 
@@ -244,7 +246,6 @@ def download_pmc_entries(pm_recs, query_dir_path, webenv):
    outfile.write("</pmc-articleset>")
    outfile.truncate()
      
- 
  print("Wrote entries to %s." % (query_entries_path))
  
  #Need to check PMC results as some may not have been available
@@ -270,3 +271,62 @@ def download_pmc_entries(pm_recs, query_dir_path, webenv):
    
  print("Retrieved %s PMC entries." % (len(pub_ids)))
  print("PMC entries with full body text: %s" % (len(fulldoc_ids)))
+ 
+def download_ptc_gene_annotations(idlist, query_dir_path):
+ '''
+ Retrieve annotations from PubTator Central for genes, in BioC XML 
+ format, given a list of PMIDs.
+ Also requires a previously created path to save annotations to.
+ Annotations will include both those on title/abstract and those
+ covering full texts (i.e., from PMC docs).
+ Note that details of BioC format are here:
+ https://www.ncbi.nlm.nih.gov/CBBresearch/Lu/Demo/tmTools/Format.html.
+ '''
+ 
+ annotations_fn = "gene_annotations.txt"
+ annotations_path = query_dir_path / annotations_fn
+ 
+ count = len(idlist)
+ batch_size = 100
+ print("Retrieving PubTator Central gene annotations for %s PMIDs." % (count))
+ 
+ pbar = tqdm(total = count, unit=" annotation sets retrieved")
+ for batch in phlp.batch_this(idlist,batch_size): 
+  pmids_joined = ",".join(batch)
+  r = requests.get("https://www.ncbi.nlm.nih.gov/research/pubtator-api/publications/export/biocxml?&concepts=gene&pmids=" + pmids_joined)
+  rxml_docs = xml.dom.minidom.parseString(r.text)
+  rxml_pretty = rxml_docs.toprettyxml()
+  
+  with open(annotations_path, "a", encoding="utf-8") as outfile:
+   outfile.write(rxml_pretty)
+   
+  pbar.update(len(batch))
+ pbar.close()
+ 
+ multiple_xml = False
+ if batch_size < count:
+  multiple_xml = True
+  
+ if multiple_xml:
+  print("Merging annotation sets...")
+  with open(annotations_path, "r+", encoding="utf-8") as outfile:
+   new_outfile = outfile.readlines()
+   outfile.seek(0)
+   have_header = False
+   for line in new_outfile:
+    if "<collection>" in line and not have_header:
+     have_header = True
+     outfile.write(line)
+    elif "<collection>" in line and have_header:
+     pass
+    elif any(noline in line for noline in ["</collection>",
+                                           "<?xml version=\"1.0\" ?>",
+                                           "<!DOCTYPE collection",
+                                           "  SYSTEM 'BioC.dtd'>"]):
+     pass
+    else:
+      outfile.write(line)
+   outfile.write("</collection>")
+   outfile.truncate()
+ 
+ print("Wrote entries to %s." % (annotations_path))
