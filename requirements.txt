@@ -3,11 +3,11 @@ catalogue==1.0.0
 certifi==2020.12.5
 chardet==4.0.0
 cymem==2.0.5
-en-ner-bionlp13cg-md==0.3.0
+https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.3.0/en_ner_bionlp13cg_md-0.3.0.tar.gz
 idna==2.10
 joblib==1.0.0
 murmurhash==1.0.5
-nmslib==2.0.11
+nmslib>=1.7.3.6
 numpy==1.19.5
 plac==1.1.3
 preshed==3.0.5
