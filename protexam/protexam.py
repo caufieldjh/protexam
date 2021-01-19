@@ -60,6 +60,7 @@ def main():
   have_query = True
   query = (args.query)[0]
   pmid_list, query_dir_path, webenv = pqry.run_pubmed_query(query)
+  log_file_path = phlp.write_log(query, query_dir_path)
   
  if args.query_file:
   have_query = True
@@ -68,13 +69,15 @@ def main():
 			for query_item in query_file:
 				query_list.append(query_item.rstrip())
   pmid_list, query_dir_path, webenv = pqry.run_pubmed_query(query_list)
+  log_file_path = phlp.write_log("\t".join(query_list), query_dir_path)
   
  if not have_query:
   sys.exit("No query provided. Please use the --query or --query_file "
            "options.\n"
   "Exiting...")
-  
-  print(query_dir_path)
+ 
+ print("Saving records and logs to %s" % (query_dir_path))
+ print("See %s for query details." % (log_file_path))
  
  #Prompt to continue - the function here is just an input parser
  question = "Continue with document download? (Y/N) "

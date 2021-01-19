@@ -6,7 +6,7 @@ General purpose helper functions for ProtExAM.
 
 from zipfile import ZipFile
 import xlrd
-import csv
+import csv, datetime
 
 def batch_this(mylist, n=1):
  '''Prepares batches of maximum size n from a list.'''
@@ -52,5 +52,20 @@ def get_input(context, desired_output):
   return True
  if desired_output == "truefalse" and text.lower() == "n":
   return False
+  
+def write_log(query, query_dir_path):
+ '''Saves metadata for a query to a log file.'''
+ 
+ log_fn = "query.log"
+ log_file_path = query_dir_path / log_fn
+ 
+ now = datetime.datetime.now()
+ nowstring = now.strftime("%Y-%m-%d %H:%M:%S")
+ 
+ with open(log_file_path, "w", encoding="utf-8") as outfile:
+  outfile.write(query + "\n")
+  outfile.write(nowstring)
+ 
+ return log_file_path
   
 	
