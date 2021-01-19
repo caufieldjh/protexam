@@ -43,6 +43,7 @@ def run_pubmed_query(query):
  
  now = datetime.datetime.now()
  nowstring = now.strftime("%Y-%m-%d %H:%M:%S")
+ randnum = random.randint(0,10000000)
  
  #Create the queries folder if it does not yet exist
  QUERY_PATH.mkdir(exist_ok=True)
@@ -53,7 +54,11 @@ def run_pubmed_query(query):
   query = flat_query
  
  #Filename and directory setup
- query_dir_name = (query[0:20] + nowstring).replace(" ", "_").replace(":", "-")
+ repchars = ":[]()\\\/"
+ query_dir_name = (query[0:40] + "_" + str(randnum)).replace(" ", "_")
+ for char in repchars:
+  query_dir_name = query_dir_name.replace(char,"-")
+ query_dir_name = query_dir_name.lstrip("-")
  query_dir_path = QUERY_PATH / query_dir_name
  query_dir_path.mkdir()
  
