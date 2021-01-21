@@ -1,0 +1,10 @@
+echo "Will download corpora for heart disease groups using ProtExAM."
+cd protexam/
+python protexam.py --auto --query "(Cardiomyopathies[MeSH Terms]) AND (("2000/01/01"[Date - Publication] : "3000"[Date - Publication]))" 
+python protexam.py --auto --query "(Arrhythmias, Cardiac[MeSH Terms]) AND (("2000/01/01"[Date - Publication] : "3000"[Date - Publication]))" 
+python protexam.py --auto --query "(Heart Defects, Congenital[MeSH Terms]) AND (("2000/01/01"[Date - Publication] : "3000"[Date - Publication]))" 
+python protexam.py --auto --query "(Heart Valve Diseases[MeSH Terms]) AND (("2000/01/01"[Date - Publication] : "3000"[Date - Publication]))" 
+python protexam.py --auto --query "(Myocardial Ischemia[MeSH Terms]) AND (("2000/01/01"[Date - Publication] : "3000"[Date - Publication]))" 
+python protexam.py --auto --query "(Cardiac Conduction System Disease[MeSH Terms]) AND (("2000/01/01"[Date - Publication] : "3000"[Date - Publication]))" 
+python protexam.py --auto --query "(Ventricular Outflow Obstruction[MeSH Terms]) AND (("2000/01/01"[Date - Publication] : "3000"[Date - Publication]))"
+python protexam.py --auto --query "(Cardiomegaly[MeSH Terms] OR Endocarditis[MeSH Terms] OR Heart Arrest[MeSH Terms] OR Heart Rupture[MeSH Terms] OR Ventricular Dysfunction[MeSH Terms] OR Heart Failure[MeSH Terms] OR Heart Neoplasms[MeSH Terms] OR Pericarditis[MeSH Terms]) AND (("2000/01/01"[Date - Publication] : "3000"[Date - Publication]))" 
