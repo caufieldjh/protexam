@@ -348,16 +348,76 @@ def download_uniprot_entries(idlist, mode):
  the queries folder.
  '''
  
+ #Just XML output for now
+ #Alias mode not functional yet
+ 
+ import json
+ import xmlschema
+ import xml.dom.minidom
+ import xml.etree.ElementTree as ET
+ 
  now = datetime.datetime.now()
- nowstring = now.strftime("%Y-%m-%d_%H:%M:%S")
+ nowstring = now.strftime("%Y-%m-%d_%H_%M_%S")
  
  query_dir_name = "ProteinQuery_" + nowstring
  query_dir_path = QUERY_PATH / query_dir_name
+ 
  if mode == "full":
   proteins_fn = "prot_entries.txt"
  elif mode == "alias":
   proteins_fn = "aliases.txt"
  proteins_path = query_dir_path / proteins_fn
+ proteins_xml_path = query_dir_path / "prot_entries.xml"
+ query_dir_path.mkdir()
+ 
+ schema = xmlschema.XMLSchema('https://www.uniprot.org/docs/uniprot.xsd')
  
  count = len(idlist)
  print("Retrieving UniProtKB entries for %s accessions." % (count))
+ 
+ pbar = tqdm(total = count, unit=" protein entries retrieved")
+ for entry in idlist:
+  url = 'https://www.uniprot.org/uniprot/'+ entry + ".xml"
+  with urllib.request.urlopen(url) as r:
+   raw_data = r.read().strip()
+   rxml_prot = xml.dom.minidom.parseString(raw_data)
+   rxml_pretty = rxml_prot.toprettyxml()
+  with open(proteins_xml_path, "a", encoding="utf-8") as outfile:
+   outfile.write(rxml_pretty)
+  pbar.update(1)
+  
+ pbar.close()
+ 
+ print("Merging entries...")
+ up_head = "<uniprot xmlns=\"http://uniprot.org/uniprot\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://uniprot.org/uniprot http://www.uniprot.org/support/docs/uniprot.xsd\">"
+ with open(proteins_xml_path, "r+", encoding="utf-8") as outfile:
+  new_outfile = outfile.readlines()
+  outfile.seek(0)
+  have_header = False
+  for line in new_outfile:
+   if "<?xml version=\"1.0\" ?>" in line and not have_header:
+    have_header = True
+    outfile.write(line)
+    outfile.write(up_head + "\n")
+   elif "<?xml version=\"1.0\" ?>" in line and have_header:
+    pass
+   elif up_head in line and have_header:
+    pass
+   elif any(noline in line for noline in ["</uniprot>"]):
+    pass
+   else:
+     outfile.write(line)
+  outfile.write("</uniprot>")
+  outfile.truncate()
+ 
+ #tree = ET.parse(proteins_xml_path)
+ #entry_dict = schema.to_dict(tree)
+ #content = entry_dict['entry']
+ #with open(proteins_path, "w", encoding="utf-8") as outfile:
+ # for entry in content:
+ #  outfile.write(entry)
+ 
+ # print("Wrote entries to %s." % (proteins_path))
+
+ 
+ 

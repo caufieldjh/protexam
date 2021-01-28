@@ -74,6 +74,10 @@ def main():
  have_query = False
  have_prot_query = False
  
+ #Protein queries should also be loaded from a delimited file,
+ #ideally with the pandas read_csv function.
+ #Just assume the accessions are in the first column.
+ 
  if args.get_protein_entries:
   have_prot_query = True
   query_list = []

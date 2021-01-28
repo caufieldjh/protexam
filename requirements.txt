@@ -25,3 +25,4 @@ threadpoolctl==2.1.0
 tqdm==4.56.0
 urllib3==1.26.2
 wasabi==0.8.0
+xmlschema
