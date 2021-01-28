@@ -25,16 +25,33 @@ import protexam_settings as pset
 
 ## Constants and Options
 parser = argparse.ArgumentParser()
-parser.add_argument("--query", help="Search for documents matching a query, in quotes."
+query_group = parser.add_mutually_exclusive_group()
+prot_group = parser.add_mutually_exclusive_group()
+query_group.add_argument("--query", help="Search for documents matching a query, in quotes."
                                      " This will be passed to PubMed so please use"
                                      " PubMed search options, including MeSH terms.", 
 					action="append")
-parser.add_argument("--query_file", help="Search for documents matching a query," 
+query_group.add_argument("--query_file", help="Search for documents matching a query," 
                                          " starting with the name of a text file"
                                          " containing one search term per line."
                                          " By default, this assumes an OR"
                                          " relationship between all terms.",
 					action="append")
+prot_group.add_argument("--get_protein_entries", type=str,
+                    help = "Retrieve full UniProtKB entries for a list of"
+                           " UniProt accession codes, provided in a specified"
+                           " filename with one code per line."
+                           " Output is written to a file in its own folder,"
+                           " bypassing all other steps.",
+     action="store")
+prot_group.add_argument("--get_protein_aliases", type=str,
+                    help = "Retrieve UniProtKB entries for a list of"
+                           " UniProt accession codes, provided in a specified"
+                           " filename with one code per line."
+                           " Output is written to a file in its own folder,"
+                           " bypassing all other steps and limited to"
+                           " alternate protein names and identifiers.",
+     action="store")
 parser.add_argument("--auto", help="Run in automatic mode, accepting all options"
                                    " with a Yes.", 
 					action="store_true")

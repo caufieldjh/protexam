@@ -338,3 +338,16 @@ def download_ptc_gene_annotations(idlist, query_dir_path):
    outfile.truncate()
  
  print("Wrote entries to %s." % (annotations_path))
+ 
+def download_uniprot_entries(idlist, query_dir_path, mode):
+ '''
+ Retrieve full entries for a list of UniProtKB protein accession codes.
+ Also requires a path to save annotations to,
+ as well as a mode (one of "full" or "alias", where the latter
+ limits output to alternate gene names and IDs).
+ '''
+ proteins_fn = "proteins.txt"
+ proteins_path = query_dir_path / proteins_fn
+ 
+ count = len(idlist)
+ print("Retrieving UniProtKB entries for %s accessions." % (count))
