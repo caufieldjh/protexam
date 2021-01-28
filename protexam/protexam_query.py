@@ -339,14 +339,24 @@ def download_ptc_gene_annotations(idlist, query_dir_path):
  
  print("Wrote entries to %s." % (annotations_path))
  
-def download_uniprot_entries(idlist, query_dir_path, mode):
+def download_uniprot_entries(idlist, mode):
  '''
  Retrieve full entries for a list of UniProtKB protein accession codes.
- Also requires a path to save annotations to,
- as well as a mode (one of "full" or "alias", where the latter
+ Also requires a mode (one of "full" or "alias", where the latter
  limits output to alternate gene names and IDs).
+ Queries are written to files in a newly created directory under
+ the queries folder.
  '''
- proteins_fn = "proteins.txt"
+ 
+ now = datetime.datetime.now()
+ nowstring = now.strftime("%Y-%m-%d_%H:%M:%S")
+ 
+ query_dir_name = "ProteinQuery_" + nowstring
+ query_dir_path = QUERY_PATH / query_dir_name
+ if mode == "full":
+  proteins_fn = "prot_entries.txt"
+ elif mode == "alias":
+  proteins_fn = "aliases.txt"
  proteins_path = query_dir_path / proteins_fn
  
  count = len(idlist)
