@@ -5,18 +5,15 @@ ProtExAM - the Protein Expression and Association Miner
 TBD
 
 ## Setup
-Install the requirements below with pip, as follows:
+
+### Requirements
+Primary requirements are listed in requirements.txt.
+
+### Installation
+Install the requirements above with pip, as follows:
 ```
 pip3 install -r requirements.txt
 ```
-
-### Requirements
-Primary requirements are:
-* BioPython
-* BeautifulSoup4
-* environs
-* tqdm
-* xlrd
 
 ## How to Run
 
@@ -35,3 +32,4 @@ python3 protexam.py
 
 ## Credits
 Project started by Harry Caufield in the Ping Lab at UCLA in November 2020.
+Contributions from Vladimir Guevara-Gonzalez and Dibakar Sigdel.
