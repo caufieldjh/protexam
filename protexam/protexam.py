@@ -37,21 +37,21 @@ query_group.add_argument("--query_file", help="Search for documents matching a q
                                          " By default, this assumes an OR"
                                          " relationship between all terms.",
 					action="append")
-prot_group.add_argument("--get_protein_entries", type=str,
+prot_group.add_argument("--get_protein_entries",
                     help = "Retrieve full UniProtKB entries for a list of"
                            " UniProt accession codes, provided in a specified"
                            " filename with one code per line."
                            " Output is written to a file in its own folder,"
                            " bypassing all other steps.",
-     action="store")
-prot_group.add_argument("--get_protein_aliases", type=str,
+ )
+prot_group.add_argument("--get_protein_aliases", 
                     help = "Retrieve UniProtKB entries for a list of"
                            " UniProt accession codes, provided in a specified"
                            " filename with one code per line."
                            " Output is written to a file in its own folder,"
                            " bypassing all other steps and limited to"
                            " alternate protein names and identifiers.",
-     action="store")
+ )
 parser.add_argument("--auto", help="Run in automatic mode, accepting all options"
                                    " with a Yes.", 
 					action="store_true")
@@ -72,6 +72,25 @@ def main():
 					"Exiting...")
  
  have_query = False
+ have_prot_query = False
+ 
+ if args.get_protein_entries:
+  have_prot_query = True
+  query_list = []
+  with open(args.get_protein_entries) as query_file:
+			for query_item in query_file:
+				query_list.append(query_item.rstrip())
+  pqry.download_uniprot_entries(query_list, "full")
+  sys.exit("Exiting...")
+  
+ if args.get_protein_aliases:
+  have_prot_query = True
+  query_list = []
+  with open(args.get_protein_aliases) as query_file:
+			for query_item in query_file:
+				query_list.append(query_item.rstrip())
+  pqry.download_uniprot_entries(query_list, "alias")
+  sys.exit("Exiting...")
  
  if args.query:
   have_query = True
@@ -82,7 +101,7 @@ def main():
  if args.query_file:
   have_query = True
   query_list = []
-  with open(args.query_file[0]) as query_file:
+  with open(args.query_file) as query_file:
 			for query_item in query_file:
 				query_list.append(query_item.rstrip())
   pmid_list, query_dir_path, webenv = pqry.run_pubmed_query(query_list)
