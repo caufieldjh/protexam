@@ -401,20 +401,28 @@ def download_uniprot_entries(idlist, mode):
     pass
    elif any(noline in line for noline in ["</uniprot>"]):
     pass
-   elif "</copyright>" in line:
-    outfile.write("\t</copyright>\n")
+   elif "copyright>" in line:
+    pass
+   elif "Copyrighted by the UniProt Consortium" in line:
+    pass
+   elif "Distributed under the Creative Commons Attribution" in line:
+    pass
    else:
     outfile.write(line)
-  outfile.write("</uniprot>")
+  outfile.write("\t<copyright>\n"
+                "Copyrighted by the UniProt Consortium, see https://www.uniprot.org/terms\n"
+                "Distributed under the Creative Commons Attribution (CC BY 4.0) License\n"
+                "\t</copyright>\n"
+                "</uniprot>")
   outfile.truncate()
  print("Wrote XML entries to %s." % (proteins_xml_path))
 
  print("Parsing XML entries...")
  tree = ET.parse(proteins_xml_path)
  entry_dict = schema.to_dict(tree)
- content = entry_dict['entry']
+ content = entry_dict['{http://uniprot.org/uniprot}entry']
  with open(proteins_path, "w", encoding="utf-8") as outfile:
   for entry in content:
-   outfile.write(entry)
+   outfile.write(str(entry) + "\n")
  
  print("Wrote entries to %s." % (proteins_path))
