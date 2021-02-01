@@ -440,13 +440,47 @@ def download_uniprot_entries(idlist, mode):
    for entry in content:
     entrycount = entrycount +1
     aliases = []
-    aliases.append(entry['{http://uniprot.org/uniprot}accession'][0])
+    for accession in entry['{http://uniprot.org/uniprot}accession']:
+     aliases.append(accession)
     aliases.append(entry['{http://uniprot.org/uniprot}name'][0])
+    
     try:
      aliases.append(entry['{http://uniprot.org/uniprot}protein']['{http://uniprot.org/uniprot}recommendedName']['{http://uniprot.org/uniprot}fullName']['$'])
     except KeyError:
      aliases.append(entry['{http://uniprot.org/uniprot}protein']['{http://uniprot.org/uniprot}submittedName'][0]['{http://uniprot.org/uniprot}fullName']['$'])
-    aliases.append(entry['{http://uniprot.org/uniprot}gene'][0]['{http://uniprot.org/uniprot}name'][0]['$'])
+    except TypeError:
+     aliases.append(entry['{http://uniprot.org/uniprot}protein']['{http://uniprot.org/uniprot}recommendedName']['{http://uniprot.org/uniprot}fullName'])
+    
+    try:
+     for alternativenamepair in entry['{http://uniprot.org/uniprot}protein']['{http://uniprot.org/uniprot}alternativeName']:
+      try:
+       if isinstance(alternativenamepair['{http://uniprot.org/uniprot}fullName'],dict):
+        aliases.append(alternativenamepair['{http://uniprot.org/uniprot}fullName']['$'])
+       else:
+        aliases.append(alternativenamepair['{http://uniprot.org/uniprot}fullName'])
+      except KeyError:
+       aliases.append(alternativenamepair['{http://uniprot.org/uniprot}shortName'][0])
+    except KeyError:
+     pass
+    
+    try:
+     for ecnumberpair in entry['{http://uniprot.org/uniprot}protein']['{http://uniprot.org/uniprot}recommendedName']['{http://uniprot.org/uniprot}fullName']['{http://uniprot.org/uniprot}ecNumber']:
+      aliases.append(ecnumberpair['$'])
+    except KeyError:
+      pass
+    except TypeError:
+     try:
+      for ecnumberpair in entry['{http://uniprot.org/uniprot}protein']['{http://uniprot.org/uniprot}recommendedName']['{http://uniprot.org/uniprot}fullName']['{http://uniprot.org/uniprot}ecNumber']:
+       aliases.append(ecnumberpair)
+     except TypeError:
+      pass
+
+    try:
+     for genenamepairs in entry['{http://uniprot.org/uniprot}gene'][0]['{http://uniprot.org/uniprot}name']:
+      aliases.append(genenamepairs['$'])
+    except KeyError:
+     pass
+    
     if 'Uncharacterized protein' in aliases:
      aliases.remove('Uncharacterized protein')
     outline = (("|".join(aliases)).replace(" ", "_")).lower()
