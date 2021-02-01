@@ -381,7 +381,7 @@ def download_uniprot_entries(idlist, mode):
   with urllib.request.urlopen(url) as r:
    raw_data = r.read().strip()
    rxml_prot = xml.dom.minidom.parseString(raw_data)
-   rxml_pretty = rxml_prot.toprettyxml()
+   rxml_pretty = rxml_prot.toprettyxml(newl='')
   with open(proteins_xml_path, "a", encoding="utf-8") as outfile:
    outfile.write(rxml_pretty)
   pbar.update(1)
@@ -394,30 +394,27 @@ def download_uniprot_entries(idlist, mode):
   new_outfile = outfile.readlines()
   outfile.seek(0)
   have_header = False
+  outfile.write(up_head + "\n")
+  have_header = True
   for line in new_outfile:
-   if "<?xml version=\"1.0\" ?>" in line and not have_header:
-    have_header = True
-    outfile.write(line)
-    outfile.write(up_head + "\n")
-   elif "<?xml version=\"1.0\" ?>" in line and have_header:
-    pass
-   elif up_head in line and have_header:
+   if up_head in line and have_header:
     pass
    elif any(noline in line for noline in ["</uniprot>"]):
     pass
+   elif "</copyright>" in line:
+    outfile.write("\t</copyright>\n")
    else:
-     outfile.write(line)
+    outfile.write(line)
   outfile.write("</uniprot>")
   outfile.truncate()
- 
- #tree = ET.parse(proteins_xml_path)
- #entry_dict = schema.to_dict(tree)
- #content = entry_dict['entry']
- #with open(proteins_path, "w", encoding="utf-8") as outfile:
- # for entry in content:
- #  outfile.write(entry)
- 
- # print("Wrote entries to %s." % (proteins_path))
+ print("Wrote XML entries to %s." % (proteins_xml_path))
 
+ print("Parsing XML entries...")
+ tree = ET.parse(proteins_xml_path)
+ entry_dict = schema.to_dict(tree)
+ content = entry_dict['entry']
+ with open(proteins_path, "w", encoding="utf-8") as outfile:
+  for entry in content:
+   outfile.write(entry)
  
- 
+ print("Wrote entries to %s." % (proteins_path))
