@@ -418,11 +418,13 @@ def download_uniprot_entries(idlist, mode):
  print("Wrote XML entries to %s." % (proteins_xml_path))
 
  print("Parsing XML entries...")
+ entrycount = 0
  tree = ET.parse(proteins_xml_path)
  entry_dict = schema.to_dict(tree)
  content = entry_dict['{http://uniprot.org/uniprot}entry']
  with open(proteins_path, "w", encoding="utf-8") as outfile:
   for entry in content:
+   entrycount = entrycount +1
    outfile.write(str(entry) + "\n")
  
- print("Wrote entries to %s." % (proteins_path))
+ print("Wrote entries for %s proteins to %s." % (str(entrycount), proteins_path))
