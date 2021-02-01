@@ -464,18 +464,6 @@ def download_uniprot_entries(idlist, mode):
      pass
     
     try:
-     for ecnumberpair in entry['{http://uniprot.org/uniprot}protein']['{http://uniprot.org/uniprot}recommendedName']['{http://uniprot.org/uniprot}fullName']['{http://uniprot.org/uniprot}ecNumber']:
-      aliases.append(ecnumberpair['$'])
-    except KeyError:
-      pass
-    except TypeError:
-     try:
-      for ecnumberpair in entry['{http://uniprot.org/uniprot}protein']['{http://uniprot.org/uniprot}recommendedName']['{http://uniprot.org/uniprot}fullName']['{http://uniprot.org/uniprot}ecNumber']:
-       aliases.append(ecnumberpair)
-     except TypeError:
-      pass
-
-    try:
      for genenamepairs in entry['{http://uniprot.org/uniprot}gene'][0]['{http://uniprot.org/uniprot}name']:
       aliases.append(genenamepairs['$'])
     except KeyError:
