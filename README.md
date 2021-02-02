@@ -33,3 +33,6 @@ python3 protexam.py
 ## Credits
 Project started by Harry Caufield in the Ping Lab at UCLA in November 2020.
 Contributions from Vladimir Guevara-Gonzalez and Dibakar Sigdel.
+
+The PMC to PubMed XLST file (pmc2pubmed.xsl) is a product of the National Library of Medicine (NLM).
+It is available from [its own Github repository](https://github.com/ncbi/PMCXMLConverters).
