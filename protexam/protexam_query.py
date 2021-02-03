@@ -367,9 +367,6 @@ def download_uniprot_entries(idlist, mode):
  the queries folder.
  '''
  
- #Just XML output for now
- #Alias mode not functional yet
- 
  import json
  import xmlschema
  import xml.dom.minidom
@@ -380,6 +377,9 @@ def download_uniprot_entries(idlist, mode):
  
  query_dir_name = "ProteinQuery_" + nowstring
  query_dir_path = QUERY_PATH / query_dir_name
+ 
+ #Create the queries folder if it does not yet exist
+ QUERY_PATH.mkdir(exist_ok=True)
  
  if mode == "full":
   proteins_fn = "prot_entries.txt"
