@@ -55,6 +55,14 @@ prot_group.add_argument("--get_protein_aliases",
 parser.add_argument("--auto", help="Run in automatic mode, accepting all options"
                                    " with a Yes.", 
 					action="store_true")
+     
+parser.add_argument("--convert_pmc_xml", help="After downloading PubMed"
+                                   " Central XML documents, transform"
+                                   " to standard PubMed XML style."
+                                   " Note this does not retain full"
+                                   " text content in the new file.", 
+					action="store_true")
+
 args = parser.parse_args()
 
 ## Classes
@@ -115,6 +123,11 @@ def main():
   sys.exit("No query provided. Please use the --query or --query_file "
            "options.\n"
   "Exiting...")
+  
+ if args.convert_pmc_xml:
+  convert_pmc_xml = True
+ else:
+  convert_pmc_xml = False
  
  print("Saving records and logs to %s" % (query_dir_path))
  print("See %s for query details." % (log_file_path))
@@ -129,7 +142,7 @@ def main():
   print("%s Y" % (question))
  
  recs = pqry.download_pubmed_entries(pmid_list, query_dir_path, webenv)
- pqry.download_pmc_entries(recs, query_dir_path, webenv)
+ pqry.download_pmc_entries(recs, query_dir_path, webenv, convert_pmc_xml)
  
  print("Document download complete.")
  

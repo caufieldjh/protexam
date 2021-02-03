@@ -167,10 +167,14 @@ def download_pubmed_entries(pmid_list, query_dir_path, webenv):
  
  return pm_recs
 
-def download_pmc_entries(pm_recs, query_dir_path, webenv):
+def download_pmc_entries(pm_recs, query_dir_path, webenv, convert_option=False):
  '''
  Retrieve contents of PubMed Central full text entries with IDs in the 
  provided list.
+ For interoperability purposes, PMC XML may be converted to the PubMed 
+ style with the provided XSLT file 
+ (see https://github.com/ncbi/PMCXMLConverters).
+ This only happens if convert_option is set to True.
  Input is a set of PubMed records as returned from the 
  download_pubmed_entries function, the path to a previously created 
  query directory, and a previously created WebEnv address.
@@ -179,10 +183,14 @@ def download_pmc_entries(pm_recs, query_dir_path, webenv):
  
  from Bio import Medline
  import xml.dom.minidom
- import xml.etree.ElementTree as ET
+ #import xml.etree.ElementTree as ET
+ from lxml import etree as ET 
  
  query_entries_fn = "pmc_fulltexts.txt"
  query_entries_path = query_dir_path / query_entries_fn
+ 
+ query_pm_fn = "pmc_fulltexts_as_pubmed.txt"
+ query_pm_path = query_dir_path / query_pm_fn
  
  pmc_ids = []
  for rec in pm_recs:
@@ -260,7 +268,7 @@ def download_pmc_entries(pm_recs, query_dir_path, webenv):
  fulldoc_ids =[]
  
  try:
-  tree = ET.parse(query_entries_path)
+  tree = ET.parse(str(query_entries_path)) #lxml doesn't like Path objects yet
   root = tree.getroot()
   for article in root.findall("./article"):
    for article_id in article.findall("front/article-meta/article-id"):
@@ -277,6 +285,17 @@ def download_pmc_entries(pm_recs, query_dir_path, webenv):
  print("Retrieved %s PMC entries." % (len(pub_ids)))
  print("PMC entries with full body text: %s" % (len(fulldoc_ids)))
  
+ if convert_option:
+  print("Converting PMC XML to PubMed style. This may take a while...")
+  dom = ET.parse(str(query_entries_path))
+  xslt = ET.parse("pmc2pubmed.xsl")
+  transform = ET.XSLT(xslt)
+  newdom = transform(dom)
+  with open(query_pm_path, "w", encoding="utf-8") as outfile:
+   outfile.write(ET.tostring(newdom, pretty_print=True, encoding = "unicode"))
+  
+  print("Wrote PubMed-style XML entries to %s." % (query_pm_path)) 
+  
 def download_ptc_gene_annotations(idlist, query_dir_path):
  '''
  Retrieve annotations from PubTator Central for genes, in BioC XML 
