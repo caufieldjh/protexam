@@ -490,7 +490,9 @@ def download_uniprot_entries(idlist, mode):
     
     if 'Uncharacterized protein' in aliases:
      aliases.remove('Uncharacterized protein')
-    aliases = list(set(aliases)) #Unique entries only
+    #Want unique entries only, but we also want to retain general order
+    unique_aliases = list(dict.fromkeys(aliases))
+    aliases = unique_aliases
     outline = (("|".join(aliases)).replace(" ", "_")).lower()
     outfile.write(outline + "\n")
   
