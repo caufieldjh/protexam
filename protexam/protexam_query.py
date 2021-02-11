@@ -358,11 +358,12 @@ def download_ptc_gene_annotations(idlist, query_dir_path):
  
  print("Wrote entries to %s." % (annotations_path))
  
-def download_uniprot_entries(idlist, mode):
+def download_uniprot_entries(idlist, mode, parse_file_name=""):
  '''
  Retrieve full entries for a list of UniProtKB protein accession codes.
- Also requires a mode (one of "full" or "alias", where the latter
- limits output to alternate gene names and IDs).
+ Also requires a mode ("full", "alias", or "alias_only" where the 
+ latter two limit output to alternate gene names and IDs, and the last
+ option skips the download and uses a provided file).
  Queries are written to files in a newly created directory under
  the queries folder.
  '''
@@ -383,58 +384,63 @@ def download_uniprot_entries(idlist, mode):
  
  if mode == "full":
   proteins_fn = "prot_entries.txt"
- elif mode == "alias":
+ elif mode in ["alias", "alias_only"]:
   proteins_fn = "aliases.txt"
  proteins_path = query_dir_path / proteins_fn
- proteins_xml_path = query_dir_path / "prot_entries.xml"
+ 
+ if mode in ["full", "alias"]:
+  proteins_xml_path = query_dir_path / "prot_entries.xml"
+ elif mode == "alias_only":
+  proteins_xml_path = parse_file_name
  query_dir_path.mkdir()
  
  schema = xmlschema.XMLSchema('https://www.uniprot.org/docs/uniprot.xsd')
  
- count = len(idlist)
- print("Retrieving UniProtKB entries for %s accessions." % (count))
- 
- pbar = tqdm(total = count, unit=" protein entries retrieved")
- for entry in idlist:
-  url = 'https://www.uniprot.org/uniprot/'+ entry + ".xml"
-  with urllib.request.urlopen(url) as r:
-   raw_data = r.read().strip()
-   rxml_prot = xml.dom.minidom.parseString(raw_data)
-   rxml_pretty = rxml_prot.toprettyxml(newl='')
-  with open(proteins_xml_path, "a", encoding="utf-8") as outfile:
-   outfile.write(rxml_pretty)
-  pbar.update(1)
+ if mode in ["full", "alias"]:
+  count = len(idlist)
+  print("Retrieving UniProtKB entries for %s accessions." % (count))
   
- pbar.close()
- 
- print("Merging entries...")
- up_head = "<uniprot xmlns=\"http://uniprot.org/uniprot\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://uniprot.org/uniprot http://www.uniprot.org/support/docs/uniprot.xsd\">"
- with open(proteins_xml_path, "r+", encoding="utf-8") as outfile:
-  new_outfile = outfile.readlines()
-  outfile.seek(0)
-  have_header = False
-  outfile.write(up_head + "\n")
-  have_header = True
-  for line in new_outfile:
-   if up_head in line and have_header:
-    pass
-   elif any(noline in line for noline in ["</uniprot>"]):
-    pass
-   elif "copyright>" in line:
-    pass
-   elif "Copyrighted by the UniProt Consortium" in line:
-    pass
-   elif "Distributed under the Creative Commons Attribution" in line:
-    pass
-   else:
-    outfile.write(line)
-  outfile.write("\t<copyright>\n"
-                "Copyrighted by the UniProt Consortium, see https://www.uniprot.org/terms\n"
-                "Distributed under the Creative Commons Attribution (CC BY 4.0) License\n"
-                "\t</copyright>\n"
-                "</uniprot>")
-  outfile.truncate()
- print("Wrote XML entries to %s." % (proteins_xml_path))
+  pbar = tqdm(total = count, unit=" protein entries retrieved")
+  for entry in idlist:
+   url = 'https://www.uniprot.org/uniprot/'+ entry + ".xml"
+   with urllib.request.urlopen(url) as r:
+    raw_data = r.read().strip()
+    rxml_prot = xml.dom.minidom.parseString(raw_data)
+    rxml_pretty = rxml_prot.toprettyxml(newl='')
+   with open(proteins_xml_path, "a", encoding="utf-8") as outfile:
+    outfile.write(rxml_pretty)
+   pbar.update(1)
+   
+  pbar.close()
+  
+  print("Merging entries...")
+  up_head = "<uniprot xmlns=\"http://uniprot.org/uniprot\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://uniprot.org/uniprot http://www.uniprot.org/support/docs/uniprot.xsd\">"
+  with open(proteins_xml_path, "r+", encoding="utf-8") as outfile:
+   new_outfile = outfile.readlines()
+   outfile.seek(0)
+   have_header = False
+   outfile.write(up_head + "\n")
+   have_header = True
+   for line in new_outfile:
+    if up_head in line and have_header:
+     pass
+    elif any(noline in line for noline in ["</uniprot>"]):
+     pass
+    elif "copyright>" in line:
+     pass
+    elif "Copyrighted by the UniProt Consortium" in line:
+     pass
+    elif "Distributed under the Creative Commons Attribution" in line:
+     pass
+    else:
+     outfile.write(line)
+   outfile.write("\t<copyright>\n"
+                 "Copyrighted by the UniProt Consortium, see https://www.uniprot.org/terms\n"
+                 "Distributed under the Creative Commons Attribution (CC BY 4.0) License\n"
+                 "\t</copyright>\n"
+                 "</uniprot>")
+   outfile.truncate()
+  print("Wrote XML entries to %s." % (proteins_xml_path))
 
  if mode == "full":
   print("Parsing XML entries...")
@@ -449,7 +455,7 @@ def download_uniprot_entries(idlist, mode):
   
   print("Wrote entries for %s proteins to %s." % (str(entrycount), proteins_path))
  
- if mode == "alias":
+ if mode in ["alias", "alias_only"]:
   print("Parsing XML entries...")
   entrycount = 0
   tree = ET.parse(proteins_xml_path)

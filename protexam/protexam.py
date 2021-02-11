@@ -27,6 +27,7 @@ import protexam_settings as pset
 parser = argparse.ArgumentParser()
 query_group = parser.add_mutually_exclusive_group()
 prot_group = parser.add_mutually_exclusive_group()
+single_parse_group = parser.add_mutually_exclusive_group()
 query_group.add_argument("--query", help="Search for documents matching a query, in quotes."
                                      " This will be passed to PubMed so please use"
                                      " PubMed search options, including MeSH terms.", 
@@ -42,7 +43,7 @@ prot_group.add_argument("--get_protein_entries",
                            " UniProt accession codes, provided in a specified"
                            " filename with one code per line."
                            " Output is written to a file in its own folder,"
-                           " bypassing all other steps.",
+                           " bypassing all other steps."
  )
 prot_group.add_argument("--get_protein_aliases", 
                     help = "Retrieve UniProtKB entries for a list of"
@@ -50,7 +51,14 @@ prot_group.add_argument("--get_protein_aliases",
                            " filename with one code per line."
                            " Output is written to a file in its own folder,"
                            " bypassing all other steps and limited to"
-                           " alternate protein names and identifiers.",
+                           " alternate protein names and identifiers."
+ )
+single_parse_group.add_argument("--up_xml_to_aliases", 
+                    help = "Parse a single file of UniProtKB entry XML"
+                           " to aliases. Useful if XML download succeeds"
+                           " but parsing fails, or if the entry file"
+                           " was obtained elsewhere and you only need"
+                           " aliases."
  )
 parser.add_argument("--auto", help="Run in automatic mode, accepting all options"
                                    " with a Yes.", 
@@ -102,6 +110,12 @@ def main():
 			for query_item in query_file:
 				query_list.append(query_item.rstrip())
   pqry.download_uniprot_entries(query_list, "alias")
+  sys.exit("Exiting...")
+  
+ if args.up_xml_to_aliases:
+  query_list = []
+  pqry.download_uniprot_entries(query_list, "alias_only", 
+                                args.up_xml_to_aliases)
   sys.exit("Exiting...")
  
  if args.query:
