@@ -398,18 +398,26 @@ def download_uniprot_entries(idlist, mode, parse_file_name=""):
  
  if mode in ["full", "alias"]:
   count = len(idlist)
+
   print("Retrieving UniProtKB entries for %s accessions." % (count))
   
   pbar = tqdm(total = count, unit=" protein entries retrieved")
-  for entry in idlist:
-   url = 'https://www.uniprot.org/uniprot/'+ entry + ".xml"
-   with urllib.request.urlopen(url) as r:
+  
+  for id_batch in phlp.batch_this(idlist, 1000):
+   url = 'https://www.uniprot.org/uploadlists/'
+   params = {'from':'ACC+ID', 'to':'ACC', 'format': 'xml',
+             'query': " ".join(id_batch)}
+   enc_params = urllib.parse.urlencode(params)
+   enc_params = enc_params.encode('utf-8')
+   req = urllib.request.Request(url, enc_params)
+   
+   with urllib.request.urlopen(req) as r:
     raw_data = r.read().strip()
     rxml_prot = xml.dom.minidom.parseString(raw_data)
     rxml_pretty = rxml_prot.toprettyxml(newl='')
    with open(proteins_xml_path, "a", encoding="utf-8") as outfile:
     outfile.write(rxml_pretty)
-   pbar.update(1)
+   pbar.update(len(id_batch))
    
   pbar.close()
   
