@@ -373,12 +373,14 @@ def download_uniprot_entries(idlist, mode, parse_file_name=""):
  import xml.dom.minidom
  import xml.etree.ElementTree as ET
  
+ batch_size = 1000
+ 
  now = datetime.datetime.now()
  nowstring = now.strftime("%Y-%m-%d_%H_%M_%S")
  
  query_dir_name = "ProteinQuery_" + nowstring
  query_dir_path = QUERY_PATH / query_dir_name
- 
+  
  #Create the queries folder if it does not yet exist
  QUERY_PATH.mkdir(exist_ok=True)
  
@@ -394,6 +396,8 @@ def download_uniprot_entries(idlist, mode, parse_file_name=""):
   proteins_xml_path = parse_file_name
  query_dir_path.mkdir()
  
+ xml_paths = []
+ 
  schema = xmlschema.XMLSchema('https://www.uniprot.org/docs/uniprot.xsd')
  
  if mode in ["full", "alias"]:
@@ -401,9 +405,18 @@ def download_uniprot_entries(idlist, mode, parse_file_name=""):
 
   print("Retrieving UniProtKB entries for %s accessions." % (count))
   
+  if count > batch_size:
+    print("XML output will be in multiple files.")
+  
   pbar = tqdm(total = count, unit=" protein entries retrieved")
   
-  for id_batch in phlp.batch_this(idlist, 1000):
+  path_i = 0
+  
+  for id_batch in phlp.batch_this(idlist, batch_size):
+   
+   prot_xml_fn = "prot_entries_%s.xml" % (str(path_i))
+   proteins_xml_path = query_dir_path / prot_xml_fn
+   
    url = 'https://www.uniprot.org/uploadlists/'
    params = {'from':'ACC+ID', 'to':'ACC', 'format': 'xml',
              'query': " ".join(id_batch)}
@@ -417,99 +430,112 @@ def download_uniprot_entries(idlist, mode, parse_file_name=""):
     rxml_pretty = rxml_prot.toprettyxml(newl='')
    with open(proteins_xml_path, "a", encoding="utf-8") as outfile:
     outfile.write(rxml_pretty)
+   
+   up_head = "<uniprot xmlns=\"http://uniprot.org/uniprot\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://uniprot.org/uniprot http://www.uniprot.org/support/docs/uniprot.xsd\">"
+   with open(proteins_xml_path, "r+", encoding="utf-8") as outfile:
+    new_outfile = outfile.readlines()
+    outfile.seek(0)
+    have_header = False
+    outfile.write(up_head + "\n")
+    have_header = True
+    for line in new_outfile:
+     if up_head in line and have_header:
+      pass
+     elif any(noline in line for noline in ["</uniprot>"]):
+      pass
+     elif "copyright>" in line:
+      pass
+     elif "Copyrighted by the UniProt Consortium" in line:
+      pass
+     elif "Distributed under the Creative Commons Attribution" in line:
+      pass
+     else:
+      outfile.write(line)
+    outfile.write("\t<copyright>\n"
+                  "Copyrighted by the UniProt Consortium, see https://www.uniprot.org/terms\n"
+                  "Distributed under the Creative Commons Attribution (CC BY 4.0) License\n"
+                  "\t</copyright>\n"
+                  "</uniprot>")
+    outfile.truncate()
+    #print("Wrote XML entries to %s." % (proteins_xml_path))
+   
+   xml_paths.append(proteins_xml_path)
+   path_i = path_i +1
+   
    pbar.update(len(id_batch))
    
-  pbar.close()
-  
-  print("Merging entries...")
-  up_head = "<uniprot xmlns=\"http://uniprot.org/uniprot\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://uniprot.org/uniprot http://www.uniprot.org/support/docs/uniprot.xsd\">"
-  with open(proteins_xml_path, "r+", encoding="utf-8") as outfile:
-   new_outfile = outfile.readlines()
-   outfile.seek(0)
-   have_header = False
-   outfile.write(up_head + "\n")
-   have_header = True
-   for line in new_outfile:
-    if up_head in line and have_header:
-     pass
-    elif any(noline in line for noline in ["</uniprot>"]):
-     pass
-    elif "copyright>" in line:
-     pass
-    elif "Copyrighted by the UniProt Consortium" in line:
-     pass
-    elif "Distributed under the Creative Commons Attribution" in line:
-     pass
-    else:
-     outfile.write(line)
-   outfile.write("\t<copyright>\n"
-                 "Copyrighted by the UniProt Consortium, see https://www.uniprot.org/terms\n"
-                 "Distributed under the Creative Commons Attribution (CC BY 4.0) License\n"
-                 "\t</copyright>\n"
-                 "</uniprot>")
-   outfile.truncate()
-  print("Wrote XML entries to %s." % (proteins_xml_path))
+ pbar.close()
 
  if mode == "full":
   print("Parsing XML entries...")
-  entrycount = 0
-  tree = ET.parse(proteins_xml_path)
-  entry_dict = schema.to_dict(tree)
-  content = entry_dict['{http://uniprot.org/uniprot}entry']
-  with open(proteins_path, "w", encoding="utf-8") as outfile:
-   for entry in content:
-    entrycount = entrycount +1
-    outfile.write(str(entry) + "\n")
+  comp_count = 1
+  for proteins_xml_path in xml_paths:
+   print("Parsing %s (%s out of %s files)." % (proteins_xml_path, comp_count, len(xml_paths)))
+   entrycount = 0
+   tree = ET.parse(proteins_xml_path)
+   entry_dict = schema.to_dict(tree)
+   content = entry_dict['{http://uniprot.org/uniprot}entry']
+   with open(proteins_path, "a", encoding="utf-8") as outfile:
+    for entry in content:
+     entrycount = entrycount +1
+     outfile.write(str(entry) + "\n")
+
+   comp_count = comp_count +1
   
-  print("Wrote entries for %s proteins to %s." % (str(entrycount), proteins_path))
+  print("Wrote entries for %s proteins to %s." % (str(idlist), proteins_path))
  
  if mode in ["alias", "alias_only"]:
   print("Parsing XML entries...")
-  entrycount = 0
-  tree = ET.parse(proteins_xml_path)
-  entry_dict = schema.to_dict(tree)
-  content = entry_dict['{http://uniprot.org/uniprot}entry']
-  with open(proteins_path, "w", encoding="utf-8") as outfile:
-   for entry in content:
-    entrycount = entrycount +1
-    aliases = []
-    for accession in entry['{http://uniprot.org/uniprot}accession']:
-     aliases.append(accession)
-    aliases.append(entry['{http://uniprot.org/uniprot}name'][0])
+  comp_count = 1
+  for proteins_xml_path in xml_paths:
+   print("Parsing %s (%s out of %s files)." % (proteins_xml_path, comp_count, len(xml_paths)))
+   entrycount = 0
+   tree = ET.parse(proteins_xml_path)
+   entry_dict = schema.to_dict(tree)
+   content = entry_dict['{http://uniprot.org/uniprot}entry']
+   with open(proteins_path, "a", encoding="utf-8") as outfile:
+    for entry in content:
+     entrycount = entrycount +1
+     aliases = []
+     for accession in entry['{http://uniprot.org/uniprot}accession']:
+      aliases.append(accession)
+     aliases.append(entry['{http://uniprot.org/uniprot}name'][0])
+     
+     try:
+      aliases.append(entry['{http://uniprot.org/uniprot}protein']['{http://uniprot.org/uniprot}recommendedName']['{http://uniprot.org/uniprot}fullName']['$'])
+     except KeyError:
+      aliases.append(entry['{http://uniprot.org/uniprot}protein']['{http://uniprot.org/uniprot}submittedName'][0]['{http://uniprot.org/uniprot}fullName']['$'])
+     except TypeError:
+      aliases.append(entry['{http://uniprot.org/uniprot}protein']['{http://uniprot.org/uniprot}recommendedName']['{http://uniprot.org/uniprot}fullName'])
+     
+     try:
+      for alternativenamepair in entry['{http://uniprot.org/uniprot}protein']['{http://uniprot.org/uniprot}alternativeName']:
+       try:
+        if isinstance(alternativenamepair['{http://uniprot.org/uniprot}fullName'],dict):
+         aliases.append(alternativenamepair['{http://uniprot.org/uniprot}fullName']['$'])
+        else:
+         aliases.append(alternativenamepair['{http://uniprot.org/uniprot}fullName'])
+       except KeyError:
+        aliases.append(alternativenamepair['{http://uniprot.org/uniprot}shortName'][0])
+     except KeyError:
+      pass
+     
+     try:
+      for genenamepairs in entry['{http://uniprot.org/uniprot}gene'][0]['{http://uniprot.org/uniprot}name']:
+       aliases.append(genenamepairs['$'])
+     except KeyError:
+      pass
+     
+     if 'Uncharacterized protein' in aliases:
+      aliases.remove('Uncharacterized protein')
+     #Want unique entries only, but we also want to retain general order
+     unique_aliases = list(dict.fromkeys(aliases))
+     aliases = unique_aliases
+     outline = (("|".join(aliases)).replace(" ", "_")).lower()
+     outfile.write(outline + "\n")
     
-    try:
-     aliases.append(entry['{http://uniprot.org/uniprot}protein']['{http://uniprot.org/uniprot}recommendedName']['{http://uniprot.org/uniprot}fullName']['$'])
-    except KeyError:
-     aliases.append(entry['{http://uniprot.org/uniprot}protein']['{http://uniprot.org/uniprot}submittedName'][0]['{http://uniprot.org/uniprot}fullName']['$'])
-    except TypeError:
-     aliases.append(entry['{http://uniprot.org/uniprot}protein']['{http://uniprot.org/uniprot}recommendedName']['{http://uniprot.org/uniprot}fullName'])
-    
-    try:
-     for alternativenamepair in entry['{http://uniprot.org/uniprot}protein']['{http://uniprot.org/uniprot}alternativeName']:
-      try:
-       if isinstance(alternativenamepair['{http://uniprot.org/uniprot}fullName'],dict):
-        aliases.append(alternativenamepair['{http://uniprot.org/uniprot}fullName']['$'])
-       else:
-        aliases.append(alternativenamepair['{http://uniprot.org/uniprot}fullName'])
-      except KeyError:
-       aliases.append(alternativenamepair['{http://uniprot.org/uniprot}shortName'][0])
-    except KeyError:
-     pass
-    
-    try:
-     for genenamepairs in entry['{http://uniprot.org/uniprot}gene'][0]['{http://uniprot.org/uniprot}name']:
-      aliases.append(genenamepairs['$'])
-    except KeyError:
-     pass
-    
-    if 'Uncharacterized protein' in aliases:
-     aliases.remove('Uncharacterized protein')
-    #Want unique entries only, but we also want to retain general order
-    unique_aliases = list(dict.fromkeys(aliases))
-    aliases = unique_aliases
-    outline = (("|".join(aliases)).replace(" ", "_")).lower()
-    outfile.write(outline + "\n")
+   comp_count = comp_count +1
   
-  print("Wrote aliases for %s proteins to %s." % (str(entrycount), proteins_path))
+  print("Wrote aliases for %s proteins to %s." % (str(len(idlist)), proteins_path))
   
   
