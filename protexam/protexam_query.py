@@ -21,7 +21,7 @@ import protexam_helpers as phlp
 
 ## Constants
 
-QUERY_PATH = Path('../queries')
+QUERY_PATH = pset.QUERY_PATH
 
 PERSONAL_EMAIL = pset.PERSONAL_EMAIL
 

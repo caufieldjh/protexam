@@ -9,8 +9,11 @@ It's all right there in the name. Fun, right?
 '''
 
 from environs import Env
+from pathlib import Path
 
 env = Env()
 
 PERSONAL_EMAIL = "jcaufield@mednet.ucla.edu"
+
+QUERY_PATH = Path('../queries')
 

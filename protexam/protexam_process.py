@@ -4,8 +4,16 @@
 Processing functions for ProtExAM.
 '''
 
-import os
-import json
+import os, json, re
+from pathlib import Path
+
+import protexam_settings as pset
+
+## Constants
+
+QUERY_PATH = pset.QUERY_PATH
+
+## Functions
 
 def spacy_gene_ner(text):
 	'''Takes a string and returns a list of tuples denoting genes 
@@ -40,12 +48,15 @@ def extract_full_text_json():
 	
 	import xml.etree.ElementTree as ET
 	
+	fulltext_output_fn = "pmid_fulltext.json"
+	fulltext_output_path = QUERY_PATH / fulltext_output_fn
+	
 	def PubmedXML(file_name):
 		with open(file_name,"rb") as f:
 			context = ET.iterparse(f, events=("start","end"))
-		for event, elem in context:
-			yield event,elem
-			elem.clear()
+			for event, elem in context:
+				yield event,elem
+				elem.clear()
                         
 	def FullTextFromXML(file_name):
 		current_vals = {"pmid":None, "pmcid": None, "text":None}
@@ -68,14 +79,21 @@ def extract_full_text_json():
 					current_vals["pmcid"] = pmcid
 			if elem.tag == "body" and event == "start":
 				current_vals["text"] = ''.join(elem.itertext())
+				replaced_vals = current_vals["text"].replace("\n", " ")
+				replaced_vals = re.sub("\t+", "\t", replaced_vals)
+				replaced_vals = re.sub(" +", " ", replaced_vals)
+				current_vals["text"] = replaced_vals
+				print(current_vals["text"])
             
 	def pmids_from_file(file_name):
 		with open(file_name,"r") as f:
 			pmids = set(line.strip() for line in f.readlines())
 			return pmids
 	
+	print("Will output PMC full texts for each PMID across all lists in the queries folders.")
+	
 	folders_to_ignore = set(["__pycache__",".",".."])
-	folders = [folder for folder in os.scandir() if folder.is_dir() and folder.name not in folders_to_ignore]
+	folders = [folder for folder in os.scandir(QUERY_PATH) if folder.is_dir() and folder.name not in folders_to_ignore]
 	pmid_fulltext_dict = {}
 	for folder in folders:
 		files = os.scandir(folder)
@@ -86,16 +104,19 @@ def extract_full_text_json():
 			if "pmid_list" in file_.path:
 				pmid_list_path = file_.path
 		if pmid_list_path is None:
-			raise Exception(f"{folder} does not have a pmid list")
+			print(f"{folder} does not have a PMID list. Skipping this folder...")
+			continue
 		if xml_path is None:
-			raise Exception(f"{folder} does not have any pmc xml files")
+			print(f"{folder} does not have any PMC xml files. Skipping this folder...")
+			continue
 		print(f"Working on dir:{folder}")
 		full_text_dicts = FullTextFromXML(xml_path)
 		pmids = pmids_from_file(pmid_list_path)
 		for full_text_dict in full_text_dicts:
 			if full_text_dict["pmid"] in pmids:
 				pmid_fulltext_dict[full_text_dict["pmid"]] = full_text_dict["text"]
-	json.dump(pmid_fulltext_dict, open("pmid_fulltext.json","w"))
+	json.dump(pmid_fulltext_dict, open(fulltext_output_path,"w"))
+	print("Wrote output to " + str(fulltext_output_path))
     
 if __name__ == "__main__":
 	print("Starting tests for functions in protexam_process")
