@@ -60,6 +60,18 @@ single_parse_group.add_argument("--up_xml_to_aliases",
                            " was obtained elsewhere and you only need"
                            " aliases."
  )
+single_parse_group.add_argument("--extract_full_text_json", 
+                    help = "If entries for full texts have been" 
+							" downloaded from PubMed Central and now" 
+							" reside in query folders, this option" 
+							" will produce a JSON file containing" 
+							" available document full-texts for each"
+							" PubMed ID for each query."
+							" The full text entries may then be used to"
+							" enrich structured PubMed entries with" 
+							" text beyond abstracts.",
+							action="store_true"
+ )
 parser.add_argument("--auto", help="Run in automatic mode, accepting all options"
                                    " with a Yes.", 
 					action="store_true")
@@ -70,6 +82,7 @@ parser.add_argument("--convert_pmc_xml", help="After downloading PubMed"
                                    " Note this does not retain full"
                                    " text content in the new file.", 
 					action="store_true")
+
 
 args = parser.parse_args()
 
@@ -116,6 +129,10 @@ def main():
   query_list = []
   pqry.download_uniprot_entries(query_list, "alias_only", 
                                 args.up_xml_to_aliases)
+  sys.exit("Exiting...")
+
+ if args.extract_full_text_json:
+  ppro.extract_full_text_json()
   sys.exit("Exiting...")
  
  if args.query:
