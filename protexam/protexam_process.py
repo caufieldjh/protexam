@@ -80,10 +80,8 @@ def extract_full_text_json():
 			if elem.tag == "body" and event == "start":
 				current_vals["text"] = ''.join(elem.itertext())
 				replaced_vals = current_vals["text"].replace("\n", " ")
-				replaced_vals = re.sub("\t+", "\t", replaced_vals)
-				replaced_vals = re.sub(" +", " ", replaced_vals)
+				replaced_vals = re.sub("[\s\t]+", " ", replaced_vals)
 				current_vals["text"] = replaced_vals
-				print(current_vals["text"])
             
 	def pmids_from_file(file_name):
 		with open(file_name,"r") as f:
