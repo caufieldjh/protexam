@@ -130,3 +130,5 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+doll_2017_raw_prots.txt
+protexam/lee_2020_cardiac_membrane_prots.txt
