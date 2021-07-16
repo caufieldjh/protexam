@@ -72,6 +72,18 @@ single_parse_group.add_argument("--extract_full_text_json",
 							" text beyond abstracts.",
 							action="store_true"
  )
+single_parse_group.add_argument("--combine_aliases_by_uniref", 
+                    help = "Given an alias filename and a UniRef" 
+							" mapping file filename (i.e., tab-delimited"
+							" with a header, with UPIDs in the first" 
+							" column and cluster IDs in the second" 
+							" column), combine sets of aliases on the"
+							" basis of UniRef membership. Writes to the"
+							" current directory."
+							" Provide alias filename first and uniref"
+							" file second.",
+							nargs=2,
+ )
 parser.add_argument("--auto", help="Run in automatic mode, accepting all options"
                                    " with a Yes.", 
 					action="store_true")
@@ -134,6 +146,10 @@ def main():
  if args.extract_full_text_json:
   ppro.extract_full_text_json()
   sys.exit("Exiting...")
+
+ if args.combine_aliases_by_uniref:
+  ppro.combine_aliases_by_uniref(args.combine_aliases_by_uniref)
+  sys.exit("Exiting...") 
  
  if args.query:
   have_query = True

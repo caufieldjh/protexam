@@ -115,6 +115,67 @@ def extract_full_text_json():
 				pmid_fulltext_dict[full_text_dict["pmid"]] = full_text_dict["text"]
 	json.dump(pmid_fulltext_dict, open(fulltext_output_path,"w"))
 	print("Wrote output to " + str(fulltext_output_path))
+
+def combine_aliases_by_uniref(filename_args):
+	'''Given an alias filename and a UniRef mapping file filename (i.e.,
+	tab-delimited with a header, with UPIDs in the first column
+	and cluster IDs in the second column), this function
+	combines sets of aliases on the basis of UniRef membership.
+	This doesn't presume a query path exists so it just
+	writes to the current directory.'''
+		
+	alias_filename = filename_args[0] 
+	uniref_filename = filename_args[1]
+	
+	combined_alias_output_fn = "combined_aliases.txt"
+	combined_alias_output_path = Path.cwd() / combined_alias_output_fn
+	
+	print("Combining aliases in %s based on UniRef groups in %s" 
+			% (alias_filename, uniref_filename))
+			
+	#Load aliases, taking first entry as primary UPID
+	aliases = {}
+	alias_count = 0
+	with open(alias_filename, "r") as alias_file:
+		for line in alias_file:
+			these_aliases = (line.rstrip()).split("|")
+			aliases[these_aliases[0]] = these_aliases[1:]
+			alias_count = alias_count + len(these_aliases[1:])
+	
+	print("Parsed %s UniProt IDs with %s aliases." 
+			% (len(aliases.keys()), alias_count))
+	
+	#Load UniRefs
+	uniref_map = {}
+	protein_count = 0
+	with open(uniref_filename, "r") as uniref_file:
+		uniref_file.readline()
+		for line in uniref_file:
+			this_map = (line.rstrip()).split("\t")
+			these_prots = (this_map[0]).split(",")
+			these_prots = [prot.lower() for prot in these_prots]
+			uniref_map[this_map[1]] = these_prots
+			protein_count = protein_count + len(these_prots)
+	
+	print("Parsed %s UniRef IDs with %s protein IDs." 
+			% (len(uniref_map.keys()), protein_count))
+	
+	#Build UniRef to alias map
+	combined_aliases = {}
+	for cluster_id in uniref_map:
+		for prot in uniref_map[cluster_id]:
+			if cluster_id in combined_aliases.keys():
+				combined_aliases[cluster_id] = combined_aliases[cluster_id] + aliases[prot]
+			else:
+				combined_aliases[cluster_id] = aliases[prot]
+	
+	with open(combined_alias_output_fn, "w") as combined_alias_file:
+		for entry in combined_aliases:
+			lineout = entry + "|" + "|".join(combined_aliases[entry])
+			combined_alias_file.write(lineout + "\n")
+	
+	print("Wrote output to " + str(combined_alias_output_path))
+
     
 if __name__ == "__main__":
 	print("Starting tests for functions in protexam_process")
